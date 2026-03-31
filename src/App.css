@@ -3,3 +3,28 @@
   height: 100vh;
   position: relative;
 }
+
+#loading {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-family: sans-serif;
+  font-size: 14px;
+}
+
+#error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  color: #f88;
+  font-family: sans-serif;
+  font-size: 16px;
+}
