@@ -2,6 +2,9 @@ import { useCallback, useState } from "react";
 import "./App.css";
 import { useLoader } from "./hooks/useLoader";
 import { MapView } from "./components/MapView";
+import { Panel } from "./components/Panel";
+import { DEFAULT_ALGO_SETTINGS } from "./types";
+import type { AlgoSettings } from "./types";
 
 const INITIAL_VIEW_STATE = {
   longitude: 0.6,
@@ -14,7 +17,10 @@ const INITIAL_VIEW_STATE = {
 
 function App() {
   const { data, loading, error } = useLoader();
-  const [selectedPath, setSelectedPath] = useState<string | null>(null); // "b15d"
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [algoSettings, setAlgoSettings] = useState<AlgoSettings>(
+    DEFAULT_ALGO_SETTINGS,
+  );
 
   const onSelection = useCallback((pathId: string | null) => {
     setSelectedPath(pathId);
@@ -29,10 +35,12 @@ function App() {
       {loading && <div id="loading">Loading…</div>}
       <MapView
         initialViewState={INITIAL_VIEW_STATE}
-        data={{ b15d: data?.["b15d"] ?? [] }}
+        data={data}
         selectedPath={selectedPath}
         onSelection={onSelection}
+        algoSettings={algoSettings}
       />
+      <Panel settings={algoSettings} onChange={setAlgoSettings} />
     </div>
   );
 }

@@ -25,11 +25,52 @@ export interface ViewState {
   maxPitch: number;
 }
 
+export interface RDPSettings {
+  enabled: boolean;
+  epsilonKm: number;
+}
+
+export interface VWSettings {
+  enabled: boolean;
+  areaThresholdKm2: number;
+}
+
+export interface SGSettings {
+  enabled: boolean;
+  windowSize: number;
+  polynomialOrder: number;
+}
+
+export interface KalmanSettings {
+  enabled: boolean;
+  measurementSigmaKm: number;
+  accelerationSigmaKmPerDay2: number;
+}
+
+export interface AlgoSettings {
+  rdp: RDPSettings;
+  vw: VWSettings;
+  sg: SGSettings;
+  kalman: KalmanSettings;
+}
+
+export const DEFAULT_ALGO_SETTINGS: AlgoSettings = {
+  rdp: { enabled: false, epsilonKm: 10 },
+  vw: { enabled: false, areaThresholdKm2: 50 },
+  sg: { enabled: false, windowSize: 13, polynomialOrder: 3 },
+  kalman: {
+    enabled: false,
+    measurementSigmaKm: 10,
+    accelerationSigmaKmPerDay2: 300,
+  },
+};
+
 export interface MapViewProps {
   initialViewState: ViewState;
   data: IcebergData | null;
   selectedPath: string | null;
   onSelection: (id: string | null) => void;
+  algoSettings: AlgoSettings;
 }
 
 export type IcebergData = Record<string, IcebergRecord[]>;

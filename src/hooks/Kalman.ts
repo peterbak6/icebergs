@@ -1,5 +1,3 @@
-import type { IcebergPath } from "../types";
-
 export type LonLat = [number, number];
 type XYMeters = [number, number];
 
