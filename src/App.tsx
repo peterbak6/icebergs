@@ -1,12 +1,11 @@
-import { useMemo } from "react";
+import { useCallback, useState } from "react";
 import "./App.css";
 import { useLoader } from "./hooks/useLoader";
-import { buildIcebergLayer } from "./layers/IcebergLayer";
 import { MapView } from "./components/MapView";
 
 const INITIAL_VIEW_STATE = {
-  longitude: 0,
-  latitude: -90,
+  longitude: 0.6,
+  latitude: -89.0,
   zoom: 2,
   pitch: 0,
   minPitch: 0,
@@ -15,8 +14,11 @@ const INITIAL_VIEW_STATE = {
 
 function App() {
   const { data, loading, error } = useLoader();
+  const [selectedPath, setSelectedPath] = useState<string | null>(null); // "b15d"
 
-  const layer = useMemo(() => (data ? buildIcebergLayer(data) : null), [data]);
+  const onSelection = useCallback((pathId: string | null) => {
+    setSelectedPath(pathId);
+  }, []);
 
   if (error) {
     return <div id="error">Failed to load data: {error.message}</div>;
@@ -25,7 +27,12 @@ function App() {
   return (
     <div id="app">
       {loading && <div id="loading">Loading…</div>}
-      <MapView initialViewState={INITIAL_VIEW_STATE} layer={layer} />
+      <MapView
+        initialViewState={INITIAL_VIEW_STATE}
+        data={{ b15d: data?.["b15d"] ?? [] }}
+        selectedPath={selectedPath}
+        onSelection={onSelection}
+      />
     </div>
   );
 }

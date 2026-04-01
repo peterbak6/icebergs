@@ -6,6 +6,32 @@ export interface IcebergRecord {
   size: number | null;
 }
 
+export interface IcebergPath {
+  id: string;
+  path: [number, number][];
+  count: number;
+  firstDate: string;
+  lastDate: string;
+  colorIndex: string;
+  dates?: string[];
+}
+
+export interface ViewState {
+  longitude: number;
+  latitude: number;
+  zoom: number;
+  pitch: number;
+  minPitch: number;
+  maxPitch: number;
+}
+
+export interface MapViewProps {
+  initialViewState: ViewState;
+  data: IcebergData | null;
+  selectedPath: string | null;
+  onSelection: (id: string | null) => void;
+}
+
 export type IcebergData = Record<string, IcebergRecord[]>;
 
 export const colors: Record<string, [number, number, number]> = {
