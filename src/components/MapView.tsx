@@ -5,11 +5,14 @@ import { MapboxOverlay } from "@deck.gl/mapbox";
 import { PathLayer } from "@deck.gl/layers";
 import { colors } from "../types";
 import type { IcebergPath, MapViewProps } from "../types";
-import { buildPaths } from "./utils";
+import { buildPaths, unrollLongitude } from "./utils";
 import { simplifyIcebergPathsRDPMeters } from "../hooks/RamerDuglasPeuker";
 import { simplifyIcebergPathsVWMeters } from "../hooks/VisvalingamWhyatt";
 import { smoothIcebergPathsSavitzkyGolay } from "../hooks/SavitzkyGolay";
 import { smoothIcebergPathsKalman } from "../hooks/Kalman";
+
+// Set to an iceberg id (e.g. 'b10b') to render only that path for debugging.
+const DEBUG_SINGLE_PATH = "";
 
 const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -37,6 +40,7 @@ export function MapView({
   const overlayRef = useRef<MapboxOverlay | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const layerVersionRef = useRef(0);
+  const currentLayerIdRef = useRef("iceberg-paths-0");
 
   // Stable refs so layer callbacks never go stale
   const selectedPathRef = useRef<string | null>(selectedPath);
@@ -120,6 +124,12 @@ export function MapView({
           algoSettings.kalman.accelerationSigmaKmPerDay2,
       });
 
+    // SG and Kalman re-wrap output to [-180, 180], creating 358° antimeridian
+    // jumps that break globe rendering. Ensure all paths are unrolled before
+    // deck.gl sees them — continuous coords render correctly without wrapLongitude.
+    p = p.map((ip) => ({ ...ip, path: unrollLongitude(ip.path) }));
+
+    if (DEBUG_SINGLE_PATH) p = p.filter((ip) => ip.id === DEBUG_SINGLE_PATH);
     return p;
   }, [data, algoSettings]);
 
@@ -143,9 +153,9 @@ export function MapView({
           : 1,
       widthUnits: "pixels",
       widthMinPixels: 1,
-      wrapLongitude: true,
       pickable: true,
       jointRounded: true,
+      capRounded: true,
       updateTriggers: {
         getColor: [selectedPathRef.current],
         getWidth: [selectedPathRef.current],
@@ -158,22 +168,21 @@ export function MapView({
       },
     });
 
-  // Paths changed → new layer ID forces deck.gl to destroy + recreate GPU buffers
-  // (prevents wrapLongitude geometry being cached from a previous projection state)
+  // Paths changed → new layer ID so deck.gl fully recreates GPU buffers
   useEffect(() => {
     if (!overlayRef.current || !mapReady || !paths.length) return;
     const id = `iceberg-paths-${++layerVersionRef.current}`;
+    currentLayerIdRef.current = id;
     overlayRef.current.setProps({ layers: [makeLayer(id)] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paths, mapReady]);
 
-  // Selection changed → same layer ID so deck.gl updates only color/width in place
+  // Selection changed → reuse same layer ID so only accessors are re-evaluated
   useEffect(() => {
-    if (!overlayRef.current || !mapReady || !paths.length) return;
-    const id = `iceberg-paths-${layerVersionRef.current}`;
-    overlayRef.current.setProps({ layers: [makeLayer(id)] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPath, onSelection, mapReady]);
+    if (!overlayRef.current || !mapReady) return;
+    overlayRef.current.setProps({
+      layers: [makeLayer(currentLayerIdRef.current)],
+    });
+  }, [selectedPath, onSelection]);
 
   return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
 }

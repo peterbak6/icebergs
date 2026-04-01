@@ -53,9 +53,31 @@ function segmentPath(
   return segments;
 }
 
+/**
+ * Make longitude continuous — no jumps > 180° at the antimeridian.
+ * Algorithms that project to local metres need this to work correctly
+ * on circumpolar paths (lon range -180 → +180).
+ * Also ensures deck.gl on a globe projection renders arcs correctly
+ * (wrapLongitude is not needed when paths are already continuous).
+ */
+export function unrollLongitude(path: [number, number][]): [number, number][] {
+  if (path.length === 0) return path;
+  const out: [number, number][] = [path[0]];
+  for (let i = 1; i < path.length; i++) {
+    let lon = path[i][0];
+    const prev = out[i - 1][0];
+    while (lon - prev > 180) lon -= 360;
+    while (prev - lon > 180) lon += 360;
+    out.push([lon, path[i][1]]);
+  }
+  return out;
+}
+
 export function buildPaths(data: IcebergData): IcebergPath[] {
   return Object.entries(data).flatMap(([id, records]) => {
-    const path: [number, number][] = records.map((r) => [r.pos[1], r.pos[0]]);
+    const path: [number, number][] = unrollLongitude(
+      records.map((r) => [r.pos[1], r.pos[0]]),
+    );
     const dates = records.map((r) => r.date);
     const deltaDays = records.map((r, i, all) => {
       if (i === 0) return 0;

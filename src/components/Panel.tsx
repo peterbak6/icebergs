@@ -148,8 +148,8 @@ export function Panel({ settings, onChange }: PanelProps) {
               <SliderRow
                 label="Window size"
                 unit=""
-                min={3}
-                max={25}
+                min={5}
+                max={50}
                 step={2}
                 value={settings.sg.windowSize}
                 disabled={!settings.sg.enabled}

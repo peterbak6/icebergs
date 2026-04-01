@@ -17,7 +17,7 @@ const INITIAL_VIEW_STATE = {
 
 function App() {
   const { data, loading, error } = useLoader();
-  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [selectedPath, setSelectedPath] = useState<string | null>("a68a");
   const [algoSettings, setAlgoSettings] = useState<AlgoSettings>(
     DEFAULT_ALGO_SETTINGS,
   );
