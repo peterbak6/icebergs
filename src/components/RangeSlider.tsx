@@ -1,155 +1,216 @@
-import React, { useRef, useState } from "react";
-import "./RangeSlider.css";
+import React, { useMemo, useRef, useState } from "react";
 
-type DualRangeChange = {
+export type DualRangeChange = {
   from: number;
   to: number;
+  valueA: number;
+  valueB: number;
 };
 
-type DualRangeSliderProps = {
+export type DualRangeSliderProps = {
   min: number;
   max: number;
   step?: number;
-
-  // controlled
-  from?: number;
-  to?: number;
+  valueA?: number;
+  valueB?: number;
   onChange?: (range: DualRangeChange) => void;
-
-  // optional styling hook
   className?: string;
+  label?: (
+    from: number,
+    to: number,
+    valueA: number,
+    valueB: number,
+  ) => React.ReactNode;
 };
+
+type DragMode = "handleA" | "handleB" | "range" | null;
+
+type DragState = {
+  mode: DragMode;
+  startClientX: number;
+  startA: number;
+  startB: number;
+};
+
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.min(Math.max(v, lo), hi);
+
+const snap = (v: number, min: number, step: number) =>
+  min + Math.round((v - min) / step) * step;
 
 export const DualRangeSlider: React.FC<DualRangeSliderProps> = ({
   min,
   max,
   step = 1,
-  from,
-  to,
+  valueA,
+  valueB,
   onChange,
   className,
+  label,
 }) => {
-  const sliderRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<DragState | null>(null);
 
-  const dragStateRef = useRef<{
-    startX: number;
-    startFrom: number;
-    width: number;
-  } | null>(null);
+  const [internalA, setInternalA] = useState<number>(valueA ?? min);
+  const [internalB, setInternalB] = useState<number>(valueB ?? max);
 
-  // fallback internal state (uncontrolled mode)
-  const [internalFrom, setInternalFrom] = useState<number>(from ?? min);
-  const [internalTo, setInternalTo] = useState<number>(to ?? max);
+  const a = valueA ?? internalA;
+  const b = valueB ?? internalB;
 
-  const fromValue = from ?? internalFrom;
-  const toValue = to ?? internalTo;
+  const total = Math.max(max - min, step);
 
-  const totalRange = max - min;
+  const from = Math.min(a, b);
+  const to = Math.max(a, b);
 
-  const clamp = (v: number, lo: number, hi: number) =>
-    Math.min(Math.max(v, lo), hi);
+  const aPct = ((a - min) / total) * 100;
+  const bPct = ((b - min) / total) * 100;
+  const fromPct = ((from - min) / total) * 100;
+  const toPct = ((to - min) / total) * 100;
 
-  const update = (newFrom: number, newTo: number) => {
+  const update = (nextA: number, nextB: number) => {
+    const clampedA = clamp(snap(nextA, min, step), min, max);
+    const clampedB = clamp(snap(nextB, min, step), min, max);
+
     if (onChange) {
-      onChange({ from: newFrom, to: newTo });
+      onChange({
+        from: Math.min(clampedA, clampedB),
+        to: Math.max(clampedA, clampedB),
+        valueA: clampedA,
+        valueB: clampedB,
+      });
     } else {
-      setInternalFrom(newFrom);
-      setInternalTo(newTo);
+      setInternalA(clampedA);
+      setInternalB(clampedB);
     }
   };
 
-  const fromPct = ((fromValue - min) / totalRange) * 100;
-  const toPct = ((toValue - min) / totalRange) * 100;
+  const clientXToValue = (clientX: number) => {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return min;
 
-  // --- Thumb handlers
-
-  const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Math.min(Number(e.target.value), toValue - step);
-    update(val, toValue);
+    const x = clamp(clientX - rect.left, 0, rect.width);
+    const ratio = x / rect.width;
+    return min + ratio * total;
   };
 
-  const handleToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Math.max(Number(e.target.value), fromValue + step);
-    update(fromValue, val);
-  };
+  const startDrag =
+    (mode: DragMode) => (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-  // --- Range drag
+      dragRef.current = {
+        mode,
+        startClientX: e.clientX,
+        startA: a,
+        startB: b,
+      };
 
-  const handleRangeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-
-    dragStateRef.current = {
-      startX: e.clientX,
-      startFrom: fromValue,
-      width: toValue - fromValue,
+      (e.currentTarget as HTMLDivElement).setPointerCapture?.(e.pointerId);
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", stopDrag);
     };
 
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleUp);
-  };
+  const onPointerMove = (e: PointerEvent) => {
+    const drag = dragRef.current;
+    if (!drag) return;
 
-  const handleMove = (e: MouseEvent) => {
-    if (!dragStateRef.current || !sliderRef.current) return;
-
-    const { startX, startFrom, width } = dragStateRef.current;
-    const rect = sliderRef.current.getBoundingClientRect();
-
-    const deltaPx = e.clientX - startX;
-    const deltaValue =
-      Math.round(((deltaPx / rect.width) * totalRange) / step) * step;
-
-    let newFrom = startFrom + deltaValue;
-    let newTo = newFrom + width;
-
-    if (newFrom < min) {
-      newFrom = min;
-      newTo = min + width;
+    if (drag.mode === "handleA") {
+      update(clientXToValue(e.clientX), drag.startB);
+      return;
     }
 
-    if (newTo > max) {
-      newTo = max;
-      newFrom = max - width;
+    if (drag.mode === "handleB") {
+      update(drag.startA, clientXToValue(e.clientX));
+      return;
     }
 
-    update(newFrom, newTo);
+    if (drag.mode === "range") {
+      const rect = trackRef.current?.getBoundingClientRect();
+      if (!rect || rect.width <= 0) return;
+
+      const deltaPx = e.clientX - drag.startClientX;
+      const deltaValue = (deltaPx / rect.width) * total;
+
+      let nextA = drag.startA + deltaValue;
+      let nextB = drag.startB + deltaValue;
+
+      const low = Math.min(nextA, nextB);
+      const high = Math.max(nextA, nextB);
+
+      if (low < min) {
+        const shift = min - low;
+        nextA += shift;
+        nextB += shift;
+      }
+
+      if (high > max) {
+        const shift = high - max;
+        nextA -= shift;
+        nextB -= shift;
+      }
+
+      update(nextA, nextB);
+    }
   };
 
-  const handleUp = () => {
-    dragStateRef.current = null;
-    window.removeEventListener("mousemove", handleMove);
-    window.removeEventListener("mouseup", handleUp);
+  const stopDrag = () => {
+    dragRef.current = null;
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", stopDrag);
   };
+
+  const handleStyleA = useMemo(
+    () => ({
+      left: `${aPct}%`,
+      zIndex: a >= b ? 5 : 4,
+    }),
+    [aPct, a, b],
+  );
+
+  const handleStyleB = useMemo(
+    () => ({
+      left: `${bPct}%`,
+      zIndex: b > a ? 5 : 4,
+    }),
+    [bPct, a, b],
+  );
 
   return (
-    <div className={`range-slider ${className ?? ""}`}>
-      <div className="slider-container" ref={sliderRef}>
+    <div className={`dual-range-slider ${className ?? ""}`}>
+      <div className="dual-range-slider__track" ref={trackRef}>
+        <div className="dual-range-slider__rail" />
+
         <div
-          className="slider-range"
+          className="dual-range-slider__range"
           style={{
             left: `${fromPct}%`,
             width: `${toPct - fromPct}%`,
           }}
-          onMouseDown={handleRangeMouseDown}
+          onPointerDown={startDrag("range")}
         />
 
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={fromValue}
-          onChange={handleFromChange}
-          className="thumb thumb-left"
+        <div
+          className="dual-range-slider__handle"
+          style={handleStyleA}
+          onPointerDown={startDrag("handleA")}
+          role="slider"
+          aria-label="Handle A"
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={a}
+          tabIndex={0}
         />
 
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={toValue}
-          onChange={handleToChange}
-          className="thumb thumb-right"
+        <div
+          className="dual-range-slider__handle"
+          style={handleStyleB}
+          onPointerDown={startDrag("handleB")}
+          role="slider"
+          aria-label="Handle B"
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={b}
+          tabIndex={0}
         />
       </div>
     </div>

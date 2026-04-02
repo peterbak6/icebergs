@@ -1,96 +1,50 @@
-.range-slider {
+.dual-range-slider {
     width: 100%;
-    max-width: 500px;
-    font-family: sans-serif;
+    max-width: 520px;
+    user-select: none;
 }
 
-.slider-container {
+.dual-range-slider__track {
     position: relative;
     width: 100%;
-    height: 40px;
+    height: 32px;
 }
 
-.slider-container::before {
-    content: "";
+.dual-range-slider__rail {
     position: absolute;
-    top: 50%;
     left: 0;
-    width: 100%;
+    right: 0;
+    top: 50%;
     height: 6px;
     transform: translateY(-50%);
+    border-radius: 3px;
     background: #d1d5db;
-    border-radius: 999px;
-    z-index: 1;
 }
 
-.slider-range {
+.dual-range-slider__range {
     position: absolute;
     top: 50%;
     height: 6px;
     transform: translateY(-50%);
-    background: #2563eb;
-    border-radius: 999px;
-    z-index: 2;
+    border-radius: 3px;
+    background: #ff7f00;
     cursor: grab;
 }
 
-.slider-range:active {
+.dual-range-slider__range:active {
     cursor: grabbing;
 }
 
-.slider-container input[type="range"] {
+.dual-range-slider__handle {
     position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 40px;
-    margin: 0;
-    background: none;
-    pointer-events: none;
-    -webkit-appearance: none;
-    appearance: none;
-    z-index: 3;
-}
-
-.slider-container input[type="range"]::-webkit-slider-runnable-track {
-    height: 6px;
-    background: transparent;
-}
-
-.slider-container input[type="range"]::-moz-range-track {
-    height: 6px;
-    background: transparent;
-}
-
-.slider-container input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    pointer-events: auto;
+    top: 50%;
     width: 18px;
     height: 18px;
-    margin-top: -6px;
+    transform: translate(-50%, -50%);
     border-radius: 50%;
+    background: #ff7f00;
     border: 2px solid #fff;
-    background: #111827;
     cursor: pointer;
-    position: relative;
-    z-index: 4;
-}
-
-.slider-container input[type="range"]::-moz-range-thumb {
-    pointer-events: auto;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    background: #111827;
-    cursor: pointer;
-}
-
-.thumb-left {
-    z-index: 4;
-}
-
-.thumb-right {
-    z-index: 5;
+    touch-action: none;
+    box-sizing: border-box;
 }

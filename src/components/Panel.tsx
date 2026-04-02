@@ -86,8 +86,8 @@ export function Panel({
               <DualRangeSlider
                 min={1970}
                 max={2020}
-                from={fromYear}
-                to={toYear}
+                valueA={fromYear}
+                valueB={toYear}
                 onChange={({ from, to }) => {
                   setFromYear(from);
                   setToYear(to);
