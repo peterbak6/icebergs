@@ -6,6 +6,7 @@ function segmentPath(
   colorIndex: string,
   path: [number, number][],
   dates: string[],
+  sizes: (number | null | undefined)[],
   deltaDays: number[],
   deltaDist: number[],
   maxDays = 30,
@@ -14,6 +15,7 @@ function segmentPath(
   const segments: IcebergPath[] = [];
   let seg: [number, number][] = [];
   let segDates: string[] = [];
+  let segSizes: (number | null | undefined)[] = [];
 
   path.forEach((p, i) => {
     const jump =
@@ -30,12 +32,16 @@ function segmentPath(
         dates: segDates,
         firstDate: segDates[0],
         lastDate: segDates[segDates.length - 1],
+        minSize: Math.min(...segSizes.filter((s): s is number => s != null)),
+        maxSize: Math.max(...segSizes.filter((s): s is number => s != null)),
       });
       seg = [];
       segDates = [];
+      segSizes = [];
     }
     seg.push(p);
     segDates.push(dates[i]);
+    segSizes.push(sizes[i]);
   });
 
   if (seg.length > 1) {
@@ -47,6 +53,8 @@ function segmentPath(
       firstDate: segDates[0],
       lastDate: segDates[segDates.length - 1],
       dates: segDates,
+      minSize: Math.min(...segSizes.filter((s): s is number => s != null)),
+      maxSize: Math.max(...segSizes.filter((s): s is number => s != null)),
     });
   }
 
@@ -79,6 +87,7 @@ export function buildPaths(data: IcebergData): IcebergPath[] {
       records.map((r) => [r.pos[1], r.pos[0]]),
     );
     const dates = records.map((r) => r.date);
+    const sizes = records.map((r) => r.size);
     const deltaDays = records.map((r, i, all) => {
       if (i === 0) return 0;
       return (
@@ -98,6 +107,6 @@ export function buildPaths(data: IcebergData): IcebergPath[] {
         Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
       return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     });
-    return segmentPath(id, id[0], path, dates, deltaDays, deltaDist);
+    return segmentPath(id, id[0], path, dates, sizes, deltaDays, deltaDist);
   });
 }

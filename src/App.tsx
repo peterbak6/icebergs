@@ -30,7 +30,14 @@ function App() {
 
   /**
    * Filter iceberg paths by first letter (e.g. 'a', 'b', etc.) according to the
-   * provided filters and at least two coordiantes present.
+   * provided filters and at least two coordiantes present. Size Filter:
+   *  Object.entries(data).map(([key, value]) => { 
+          const size = [Math.min(...value.filter(v => v.size).map(v => v.size)), Math.max(...value.filter(v => v.size).map(v => v.size))];
+          if (!isFinite(size[0]) || !isFinite(size[1])) return null;
+          const entry = {};
+          entry[key] = size;
+          return entry
+      }).filter(v => v)
    */
   const onFilter = useCallback(
     (filters: { [key: string]: boolean }) => {

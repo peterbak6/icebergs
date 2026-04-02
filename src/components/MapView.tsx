@@ -2,11 +2,12 @@ import { useEffect, useRef, useMemo, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { PathLayer } from "@deck.gl/layers";
+import { PathLayer, ScatterplotLayer } from "@deck.gl/layers";
 import { colors } from "../types";
 import type {
   IcebergPath,
   IcebergData,
+  IcebergRecord,
   AlgoSettings,
   ViewState,
 } from "../types";
@@ -80,7 +81,14 @@ export function MapView({
       getTooltip: ({ object }: { object?: IcebergPath | null }) => {
         if (!object) return null;
         return {
-          html: `<b>${object.id.toUpperCase()}</b><br/>${object.firstDate} → ${object.lastDate}<br/>${object.count} observations`,
+          html: `<b>${object.id.toUpperCase()}</b><br/>
+          ${object.firstDate} → ${object.lastDate}<br/>
+          ${
+            isFinite(object.minSize ?? NaN) && isFinite(object.maxSize ?? NaN)
+              ? `Size range: ${object.minSize} → ${object.maxSize} km²<br/>`
+              : ""
+          }
+          ${object.count} observations`,
           style: {
             backgroundColor: "rgba(0,0,0,0.75)",
             color: "#fff",
@@ -146,6 +154,32 @@ export function MapView({
     return p;
   }, [data, algoSettings]);
 
+  // Scatter layer showing true size circles for the selected iceberg's observations
+  const makeScatterLayer = (selectedId: string | null) => {
+    if (!selectedId || !data) return null;
+    const records = (data[selectedId] ?? []).filter(
+      (r): r is IcebergRecord & { size: number } => r.size != null,
+    );
+    if (!records.length) return null;
+    const [r, g, b] = colors[selectedId[0]] ?? [200, 200, 200];
+    return new ScatterplotLayer<IcebergRecord & { size: number }>({
+      id: "iceberg-size-scatter",
+      data: records,
+      // pos is stored as [lat, lon]; deck.gl expects [lon, lat]
+      getPosition: (rec) => [rec.pos[1], rec.pos[0]],
+      // Convert area (km²) to circle radius (m): r = sqrt(area / π) * 1000
+      getRadius: (rec) => Math.sqrt((rec.size * 1_000_000) / Math.PI),
+      radiusUnits: "meters",
+      filled: true,
+      stroked: true,
+      getFillColor: [r, g, b, 180],
+      getLineColor: [r, g, b, 255],
+      getLineWidth: 1,
+      lineWidthUnits: "pixels",
+      pickable: false,
+    });
+  };
+
   // Layer factory — accessors read from refs so they're always current
   const makeLayer = (layerId: string) =>
     new PathLayer<IcebergPath>({
@@ -162,7 +196,7 @@ export function MapView({
       },
       getWidth: (d) =>
         selectedPathRef.current !== null && d.id === selectedPathRef.current
-          ? 7
+          ? 3
           : 1,
       widthUnits: "pixels",
       widthMinPixels: 1,
@@ -186,14 +220,25 @@ export function MapView({
     if (!overlayRef.current || !mapReady || !paths.length) return;
     const id = `iceberg-paths-${++layerVersionRef.current}`;
     currentLayerIdRef.current = id;
-    overlayRef.current.setProps({ layers: [makeLayer(id)] });
+    const scatter = makeScatterLayer(selectedPathRef.current);
+    // algoSettings has any enabled:
+    const hasAlgo = Object.values(algoSettings).some((s) => s.enabled);
+    overlayRef.current.setProps({
+      layers: [makeLayer(id), ...(scatter && !hasAlgo ? [scatter] : [])],
+    });
   }, [paths, mapReady]);
 
   // Selection changed → reuse same layer ID so only accessors are re-evaluated
   useEffect(() => {
     if (!overlayRef.current || !mapReady) return;
+    const scatter = makeScatterLayer(selectedPathRef.current);
+    debugger;
+    const hasAlgo = Object.values(algoSettings).some((s) => s.enabled);
     overlayRef.current.setProps({
-      layers: [makeLayer(currentLayerIdRef.current)],
+      layers: [
+        makeLayer(currentLayerIdRef.current),
+        ...(scatter && !hasAlgo ? [scatter] : []),
+      ],
     });
   }, [selectedPath, onSelection]);
 

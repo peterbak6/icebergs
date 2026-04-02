@@ -56,10 +56,8 @@ export function Panel({ settings, onChange, onFilter }: PanelProps) {
         {open.has("iceberg") && (
           <div className="section-body">
             <p className="description">
-              Trajectories from the BYU/NIC Antarctic Iceberg Tracking Database.
-              Each path shows one iceberg&apos;s drift from calving to
-              disintegration or grounding. Colors denote the naming series
-              assigned at calving.
+              Iceberg trajectories show drift from calving to disintegration or
+              grounding. Colors denote the naming series assigned at calving.
             </p>
             <div className="palette">
               {Object.entries(colors).map(([key, [r, g, b]]) => (
@@ -229,6 +227,29 @@ export function Panel({ settings, onChange, onFilter }: PanelProps) {
             </div>
           </div>
         )}
+      </div>
+      {/* ── Footer: always visible ── */}
+      <div className="panel-divider" />
+      <div className="panel-footer">
+        <a
+          className="data-source-link"
+          href="https://movingpandas.github.io/movingpandas-website/2-analysis-examples/iceberg.html"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Budge & Long, BYU MERS Consolidated Antarctic Iceberg Database
+        </a>
+        <p className="data-source-link" style={{ opacity: 0.75 }}>
+          © 2026 Peter Bak ·{" "}
+          <a
+            href="https://visualanalytics.co.il"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "inherit", textDecoration: "underline" }}
+          >
+            VisualAnalytics
+          </a>
+        </p>
       </div>
     </div>
   );

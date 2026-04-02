@@ -5,6 +5,8 @@ export interface IcebergRecord {
   date: string;
   /** [lat, lon] as stored by the parser */
   pos: LonLat;
+  /** Area in km², often null */
+  size?: number | null;
 }
 
 export interface IcebergPath {
@@ -16,6 +18,8 @@ export interface IcebergPath {
   lastDate: string;
   colorIndex: string;
   dates?: string[];
+  minSize?: number;
+  maxSize?: number;
 }
 
 export type IcebergData = Record<string, IcebergRecord[]>;
