@@ -17,7 +17,7 @@ export function useLoader(): LoaderState {
   });
 
   useEffect(() => {
-    fetch("/data/icebergs.json")
+    fetch(`${import.meta.env.BASE_URL}data/icebergs.json`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<IcebergData>;
