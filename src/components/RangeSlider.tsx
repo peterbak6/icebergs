@@ -46,7 +46,6 @@ export const DualRangeSlider: React.FC<DualRangeSliderProps> = ({
   valueB,
   onChange,
   className,
-  label,
 }) => {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
