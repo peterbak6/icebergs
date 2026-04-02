@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
+import "./RangeSlider.css";
 
 export type DualRangeChange = {
   from: number;
