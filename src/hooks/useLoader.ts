@@ -3,6 +3,8 @@ import type { IcebergData } from "../types";
 
 interface LoaderState {
   data: IcebergData | null;
+  firstDate?: number;
+  lastDate?: number;
   loading: boolean;
   error: Error | null;
 }
@@ -20,7 +22,24 @@ export function useLoader(): LoaderState {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<IcebergData>;
       })
-      .then((data) => setState({ data, loading: false, error: null }))
+      .then((data) => {
+        let firstDate = Infinity;
+        let lastDate = -Infinity;
+        for (const records of Object.values(data)) {
+          for (const record of records) {
+            const year = parseInt(record.date, 10);
+            if (year < firstDate) firstDate = year;
+            if (year > lastDate) lastDate = year;
+          }
+        }
+        setState({
+          data,
+          firstDate: isFinite(firstDate) ? firstDate : undefined,
+          lastDate: isFinite(lastDate) ? lastDate : undefined,
+          loading: false,
+          error: null,
+        });
+      })
       .catch((err: unknown) =>
         setState({
           data: null,

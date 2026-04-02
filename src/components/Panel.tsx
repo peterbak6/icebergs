@@ -1,22 +1,29 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { colors } from "../types";
 import type { AlgoSettings } from "../types";
 import "./Panel.css";
+import { DualRangeSlider } from "./RangeSlider";
 
 interface PanelProps {
   settings: AlgoSettings;
+  yearRange: [number, number];
+  filters: Record<string, boolean>;
   onChange: (settings: AlgoSettings) => void;
-  onFilter: (filters: { [key: string]: boolean }) => void;
+  onFiltersChange: (filters: Record<string, boolean>) => void;
+  onYearRangeChange: (range: [number, number]) => void;
 }
 
-export function Panel({ settings, onChange, onFilter }: PanelProps) {
+export function Panel({
+  settings,
+  yearRange,
+  filters,
+  onChange,
+  onFiltersChange,
+  onYearRangeChange,
+}: PanelProps) {
   const [open, setOpen] = useState<Set<string>>(new Set());
-  const [filters, setFilters] = useState<{ [key: string]: boolean }>(
-    Object.keys(colors).reduce((acc: any, key: string) => {
-      acc[key] = true;
-      return acc;
-    }, {}),
-  );
+  const [fromYear, setFromYear] = useState(yearRange[0]);
+  const [toYear, setToYear] = useState(yearRange[1]);
 
   const toggle = (id: string) =>
     setOpen((prev) => {
@@ -30,17 +37,9 @@ export function Panel({ settings, onChange, onFilter }: PanelProps) {
     patch: Partial<AlgoSettings[K]>,
   ) => onChange({ ...settings, [key]: { ...settings[key], ...patch } });
 
-  const filter = (name: string) => {
-    setFilters((prev) => {
-      const next = { ...prev };
-      next[name] = !next[name];
-      return next;
-    });
+  const toggleFilter = (name: string) => {
+    onFiltersChange({ ...filters, [name]: !filters[name] });
   };
-
-  useEffect(() => {
-    onFilter(filters ? filters : {});
-  }, [filters, onFilter]);
 
   return (
     <div id="panel">
@@ -61,7 +60,11 @@ export function Panel({ settings, onChange, onFilter }: PanelProps) {
             </p>
             <div className="palette">
               {Object.entries(colors).map(([key, [r, g, b]]) => (
-                <div key={key} className="swatch" onClick={() => filter(key)}>
+                <div
+                  key={key}
+                  className="swatch"
+                  onClick={() => toggleFilter(key)}
+                >
                   <span
                     className="swatch-dot"
                     style={{
@@ -72,6 +75,25 @@ export function Panel({ settings, onChange, onFilter }: PanelProps) {
                   <span>{key.toUpperCase()}</span>
                 </div>
               ))}
+            </div>
+            <div className="range-slider">
+              <p className="slider-label-row">
+                <span>Year range:</span>
+                <span className="slider-value">
+                  {fromYear} – {toYear}
+                </span>
+              </p>
+              <DualRangeSlider
+                min={1970}
+                max={2020}
+                from={fromYear}
+                to={toYear}
+                onChange={({ from, to }) => {
+                  setFromYear(from);
+                  setToYear(to);
+                  onYearRangeChange([from, to]);
+                }}
+              />
             </div>
           </div>
         )}

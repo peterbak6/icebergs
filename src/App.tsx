@@ -1,11 +1,10 @@
-import { useCallback, useState } from "react";
+import { useMemo, useState } from "react";
 import "./App.css";
 import { useLoader } from "./hooks/useLoader";
 import { MapView } from "./components/MapView";
 import { Panel } from "./components/Panel";
-import { DEFAULT_ALGO_SETTINGS } from "./types";
-import type { AlgoSettings } from "./types";
-import type { IcebergData } from "./types";
+import { DEFAULT_ALGO_SETTINGS, colors } from "./types";
+import type { AlgoSettings, IcebergData } from "./types";
 
 const INITIAL_VIEW_STATE = {
   longitude: 0.6,
@@ -17,41 +16,38 @@ const INITIAL_VIEW_STATE = {
 };
 
 function App() {
-  const { data, loading, error } = useLoader();
-  const [showPaths, setShowPaths] = useState<IcebergData>({});
+  const { data, firstDate, lastDate, loading, error } = useLoader();
   const [selectedPath, setSelectedPath] = useState<string | null>("a68a");
   const [algoSettings, setAlgoSettings] = useState<AlgoSettings>(
     DEFAULT_ALGO_SETTINGS,
   );
-
-  const onSelection = useCallback((pathId: string | null) => {
-    setSelectedPath(pathId);
-  }, []);
-
-  /**
-   * Filter iceberg paths by first letter (e.g. 'a', 'b', etc.) according to the
-   * provided filters and at least two coordiantes present. Size Filter:
-   *  Object.entries(data).map(([key, value]) => { 
-          const size = [Math.min(...value.filter(v => v.size).map(v => v.size)), Math.max(...value.filter(v => v.size).map(v => v.size))];
-          if (!isFinite(size[0]) || !isFinite(size[1])) return null;
-          const entry = {};
-          entry[key] = size;
-          return entry
-      }).filter(v => v)
-   */
-  const onFilter = useCallback(
-    (filters: { [key: string]: boolean }) => {
-      if (!data) return;
-      setShowPaths(
-        Object.fromEntries(
-          Object.entries(data).filter(
-            ([key, value]) => value.length > 2 && filters[key[0]],
-          ),
-        ),
-      );
-    },
-    [data],
+  const [yearRange, setYearRange] = useState<[number, number]>([
+    firstDate ?? 1970,
+    lastDate ?? 2020,
+  ]);
+  const [filters, setFilters] = useState<Record<string, boolean>>(
+    Object.keys(colors).reduce<Record<string, boolean>>((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {}),
   );
+
+  const onSelection = (pathId: string | null) => setSelectedPath(pathId);
+
+  const showPaths = useMemo<IcebergData>(() => {
+    if (!data) return {};
+    const [fromYear, toYear] = yearRange;
+    const result: IcebergData = {};
+    for (const [key, records] of Object.entries(data)) {
+      if (!filters[key[0]]) continue;
+      const filtered = records.filter((r) => {
+        const year = parseInt(r.date, 10);
+        return year >= fromYear && year <= toYear;
+      });
+      if (filtered.length > 2) result[key] = filtered;
+    }
+    return result;
+  }, [data, filters, yearRange]);
 
   if (error) {
     return <div id="error">Failed to load data: {error.message}</div>;
@@ -69,11 +65,16 @@ function App() {
           algoSettings={algoSettings}
         />
       )}
-      <Panel
-        settings={algoSettings}
-        onChange={setAlgoSettings}
-        onFilter={onFilter}
-      />
+      {!loading && (
+        <Panel
+          settings={algoSettings}
+          yearRange={yearRange}
+          filters={filters}
+          onChange={setAlgoSettings}
+          onFiltersChange={setFilters}
+          onYearRangeChange={setYearRange}
+        />
+      )}
     </div>
   );
 }
