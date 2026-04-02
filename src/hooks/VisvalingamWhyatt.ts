@@ -1,7 +1,6 @@
-import type { IcebergPath } from "../types";
+import type { IcebergPath, LonLat } from "../types";
 
-export type LonLat = [number, number];
-export type XYMeters = [number, number];
+type XYMeters = [number, number];
 
 export interface VWOptions {
   areaThresholdM2: number;

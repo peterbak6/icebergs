@@ -4,8 +4,21 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { PathLayer } from "@deck.gl/layers";
 import { colors } from "../types";
-import type { IcebergPath, MapViewProps } from "../types";
+import type {
+  IcebergPath,
+  IcebergData,
+  AlgoSettings,
+  ViewState,
+} from "../types";
 import { buildPaths, unrollLongitude } from "./utils";
+
+interface MapViewProps {
+  initialViewState: ViewState;
+  data: IcebergData | null;
+  selectedPath: string | null;
+  onSelection: (id: string | null) => void;
+  algoSettings: AlgoSettings;
+}
 import { simplifyIcebergPathsRDPMeters } from "../hooks/RamerDuglasPeuker";
 import { simplifyIcebergPathsVWMeters } from "../hooks/VisvalingamWhyatt";
 import { smoothIcebergPathsSavitzkyGolay } from "../hooks/SavitzkyGolay";

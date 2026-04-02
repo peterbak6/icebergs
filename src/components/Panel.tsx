@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { colors } from "../types";
 import type { AlgoSettings } from "../types";
 import "./Panel.css";
@@ -6,10 +6,17 @@ import "./Panel.css";
 interface PanelProps {
   settings: AlgoSettings;
   onChange: (settings: AlgoSettings) => void;
+  onFilter: (filters: { [key: string]: boolean }) => void;
 }
 
-export function Panel({ settings, onChange }: PanelProps) {
+export function Panel({ settings, onChange, onFilter }: PanelProps) {
   const [open, setOpen] = useState<Set<string>>(new Set());
+  const [filters, setFilters] = useState<{ [key: string]: boolean }>(
+    Object.keys(colors).reduce((acc: any, key: string) => {
+      acc[key] = true;
+      return acc;
+    }, {}),
+  );
 
   const toggle = (id: string) =>
     setOpen((prev) => {
@@ -22,6 +29,18 @@ export function Panel({ settings, onChange }: PanelProps) {
     key: K,
     patch: Partial<AlgoSettings[K]>,
   ) => onChange({ ...settings, [key]: { ...settings[key], ...patch } });
+
+  const filter = (name: string) => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      next[name] = !next[name];
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    onFilter(filters ? filters : {});
+  }, [filters, onFilter]);
 
   return (
     <div id="panel">
@@ -44,10 +63,13 @@ export function Panel({ settings, onChange }: PanelProps) {
             </p>
             <div className="palette">
               {Object.entries(colors).map(([key, [r, g, b]]) => (
-                <div key={key} className="swatch">
+                <div key={key} className="swatch" onClick={() => filter(key)}>
                   <span
                     className="swatch-dot"
-                    style={{ background: `rgb(${r},${g},${b})` }}
+                    style={{
+                      background: filters[key] ? `rgb(${r},${g},${b})` : "none",
+                      border: `2px rgb(${r},${g},${b}) solid`,
+                    }}
                   />
                   <span>{key.toUpperCase()}</span>
                 </div>

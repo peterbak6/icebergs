@@ -1,6 +1,4 @@
-import type { IcebergPath } from "../types";
-
-export type LonLat = [number, number];
+import type { IcebergPath, LonLat } from "../types";
 
 export interface RDPMetersOptions {
   /**

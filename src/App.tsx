@@ -5,6 +5,7 @@ import { MapView } from "./components/MapView";
 import { Panel } from "./components/Panel";
 import { DEFAULT_ALGO_SETTINGS } from "./types";
 import type { AlgoSettings } from "./types";
+import type { IcebergData } from "./types";
 
 const INITIAL_VIEW_STATE = {
   longitude: 0.6,
@@ -17,6 +18,7 @@ const INITIAL_VIEW_STATE = {
 
 function App() {
   const { data, loading, error } = useLoader();
+  const [showPaths, setShowPaths] = useState<IcebergData>({});
   const [selectedPath, setSelectedPath] = useState<string | null>("a68a");
   const [algoSettings, setAlgoSettings] = useState<AlgoSettings>(
     DEFAULT_ALGO_SETTINGS,
@@ -26,6 +28,24 @@ function App() {
     setSelectedPath(pathId);
   }, []);
 
+  /**
+   * Filter iceberg paths by first letter (e.g. 'a', 'b', etc.) according to the
+   * provided filters and at least two coordiantes present.
+   */
+  const onFilter = useCallback(
+    (filters: { [key: string]: boolean }) => {
+      if (!data) return;
+      setShowPaths(
+        Object.fromEntries(
+          Object.entries(data).filter(
+            ([key, value]) => value.length > 2 && filters[key[0]],
+          ),
+        ),
+      );
+    },
+    [data],
+  );
+
   if (error) {
     return <div id="error">Failed to load data: {error.message}</div>;
   }
@@ -33,14 +53,20 @@ function App() {
   return (
     <div id="app">
       {loading && <div id="loading">Loading…</div>}
-      <MapView
-        initialViewState={INITIAL_VIEW_STATE}
-        data={data}
-        selectedPath={selectedPath}
-        onSelection={onSelection}
-        algoSettings={algoSettings}
+      {showPaths && (
+        <MapView
+          initialViewState={INITIAL_VIEW_STATE}
+          data={showPaths}
+          selectedPath={selectedPath}
+          onSelection={onSelection}
+          algoSettings={algoSettings}
+        />
+      )}
+      <Panel
+        settings={algoSettings}
+        onChange={setAlgoSettings}
+        onFilter={onFilter}
       />
-      <Panel settings={algoSettings} onChange={setAlgoSettings} />
     </div>
   );
 }

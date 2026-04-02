@@ -1,4 +1,5 @@
-export type LonLat = [number, number];
+import type { LonLat } from "../types";
+
 type XYMeters = [number, number];
 
 export interface KalmanPathOptions {
