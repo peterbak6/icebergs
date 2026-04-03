@@ -29,8 +29,9 @@ export interface ViewState {
   latitude: number;
   zoom: number;
   pitch: number;
-  minPitch: number;
-  maxPitch: number;
+  bearing?: number;
+  minPitch?: number;
+  maxPitch?: number;
 }
 
 export interface RDPSettings {

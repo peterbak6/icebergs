@@ -71,9 +71,12 @@ export function MapView({
       style: SATELLITE_STYLE,
       center: [initialViewState.longitude, initialViewState.latitude],
       zoom: initialViewState.zoom,
-      pitch: initialViewState.pitch,
-      minPitch: initialViewState.minPitch,
-      maxPitch: initialViewState.maxPitch,
+      pitch: 0,
+      bearing: 0,
+      minPitch: 0,
+      maxPitch: 0,
+      dragRotate: false,
+      touchPitch: false,
     });
 
     const overlay = new MapboxOverlay({
@@ -177,6 +180,7 @@ export function MapView({
       getLineWidth: 1,
       lineWidthUnits: "pixels",
       pickable: false,
+      parameters: { depthCompare: "always" },
     });
   };
 
@@ -203,6 +207,7 @@ export function MapView({
       pickable: true,
       jointRounded: true,
       capRounded: true,
+      parameters: { depthCompare: "always" },
       updateTriggers: {
         getColor: [selectedPathRef.current],
         getWidth: [selectedPathRef.current],
@@ -232,7 +237,6 @@ export function MapView({
   useEffect(() => {
     if (!overlayRef.current || !mapReady) return;
     const scatter = makeScatterLayer(selectedPathRef.current);
-    debugger;
     const hasAlgo = Object.values(algoSettings).some((s) => s.enabled);
     overlayRef.current.setProps({
       layers: [
