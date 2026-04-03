@@ -81,6 +81,7 @@ export function MapView({
 
     const overlay = new MapboxOverlay({
       layers: [],
+      pickingRadius: 12,
       getTooltip: ({ object }: { object?: IcebergPath | null }) => {
         if (!object) return null;
         return {
