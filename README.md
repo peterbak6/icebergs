@@ -2,7 +2,11 @@
 
 Interactive 3-D globe map of Antarctic iceberg trajectories, built with React, Vite, deck.gl, and MapLibre GL.
 
-Live: **https://icebergs.pages.dev** — Source: **https://github.com/peterbak6/icebergs**
+**Live:** [https://icebergs.pages.dev](https://icebergs.pages.dev)
+
+**Github:** [https://github.com/peterbak6/icebergs](https://github.com/peterbak6/icebergs)
+
+**Website:** [https://visualanalytics.co.il/icebergs](https://visualanalytics.co.il/icebergs)
 
 ## What is this?
 
