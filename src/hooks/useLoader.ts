@@ -17,12 +17,18 @@ export function useLoader(): LoaderState {
   });
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}data/icebergs.json`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<IcebergData>;
-      })
-      .then((data) => {
+    const base = import.meta.env.BASE_URL;
+    const letters = ["a", "b", "c", "d", "e", "s", "u"];
+    Promise.all(
+      letters.map((l) =>
+        fetch(`${base}data/${l}.json`).then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json() as Promise<IcebergData>;
+        }),
+      ),
+    )
+      .then((chunks) => {
+        const data: IcebergData = Object.assign({}, ...chunks);
         let firstDate = Infinity;
         let lastDate = -Infinity;
         for (const records of Object.values(data)) {
