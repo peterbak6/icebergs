@@ -106,6 +106,7 @@ export function MapView({
 
     map.on("load", () => {
       map.setProjection({ type: "globe" });
+      map.touchZoomRotate.disableRotation();
       setMapReady(true);
     });
 
